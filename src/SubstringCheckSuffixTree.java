@@ -1,4 +1,7 @@
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -70,17 +73,33 @@ import java.util.Scanner;
  * https://www.cs.helsinki.fi/u/ukkonen/SuffixT1withFigs.pdf
  * https://gist.github.com/axefrog/2373868
  */
-public class SuffixTree {
+public class SubstringCheckSuffixTree {
+    public static void main(String args[]) throws IOException {
+        BufferedReader bf=new BufferedReader(new InputStreamReader(System.in));
+   // Scanner sc=new Scanner(System.in);
+    String str=bf.readLine();
+            //sc.next();
+    SubstringCheckSuffixTree st = new SubstringCheckSuffixTree(str.toCharArray());
+    //SuffixTree st = new SuffixTree("mississippi".toCharArray());
+    st.build();
+    st.dfsTraversal();
+    System.out.println(st.validate());
+    st.text=str.toCharArray();
+        st.checkForSubString("TEST".toCharArray());
+        st.checkForSubString("A".toCharArray());
+        st.checkForSubString(" ".toCharArray());
+        st.checkForSubString("THIS".toCharArray());
+        st.checkForSubString("IS A".toCharArray());
+        st.checkForSubString(" IS A ".toCharArray());
+        st.checkForSubString("TEST1".toCharArray());
+        st.checkForSubString("THIS IS GOOD".toCharArray());
+          st.checkForSubString("TES".toCharArray());
+st.checkForSubString("TESA".toCharArray());
+st.checkForSubString("ISB".toCharArray());
 
-    public static void main(String args[]){
-        Scanner sc=new Scanner(System.in);
-        String str=sc.next();
-        SuffixTree st = new SuffixTree(str.toCharArray());
-        //SuffixTree st = new SuffixTree("mississippi".toCharArray());
-        st.build();
-        st.dfsTraversal();
-        System.out.println(st.validate());
-    }
+}
+
+
 
     private SuffixNode root;
     private Active active;
@@ -88,8 +107,9 @@ public class SuffixTree {
     private End end;
     private char input[];
     private static char UNIQUE_CHAR = '$';
+    char []text;
 
-    public SuffixTree(char input[]){
+    public SubstringCheckSuffixTree(char input[]){
         this.input = new char[input.length+1];
         for(int i=0; i < input.length; i++){
             this.input[i] = input[i];
@@ -234,7 +254,7 @@ public class SuffixTree {
     }
 
     //find next character to be compared to current phase character.
-    private char nextChar(int i) throws EndOfPathException{
+    private char nextChar(int i) throws EndOfPathException {
         SuffixNode node = selectNode();
         if(diff(node) >= active.activeLength){
             return input[active.activeNode.child[input[active.activeEdge]].start + active.activeLength];
@@ -375,66 +395,121 @@ public class SuffixTree {
         }
         return true;
     }
-}
 
-class SuffixNode{
+    static class SuffixNode{
 
-    private SuffixNode(){
-    }
-
-    private static final int TOTAL = 256;
-    SuffixNode[] child = new SuffixNode[TOTAL];
-
-    int start;
-    End end;
-    int index;
-
-    SuffixNode suffixLink;
-
-    public static SuffixNode createNode(int start, End end){
-        SuffixNode node = new SuffixNode();
-        node.start = start;
-        node.end = end;
-        return node;
-    }
-
-    @Override
-    public String toString() {
-        StringBuffer buffer = new StringBuffer();
-        int i=0;
-        for(SuffixNode node : child){
-            if(node != null){
-                buffer.append((char)i + " ");
-            }
-            i++;
+        private SuffixNode(){
         }
-        return "SuffixNode [start=" + start + "]" + " " + buffer.toString();
+
+        private static final int TOTAL = 256;
+        SuffixNode[] child = new SuffixNode[TOTAL];
+
+        int start;
+        End end;
+        int index;
+
+        SuffixNode suffixLink;
+
+        public static SuffixNode createNode(int start, End end){
+            SuffixNode node = new SuffixNode();
+            node.start = start;
+            node.end = end;
+            return node;
+        }
+
+        @Override
+        public String toString() {
+            StringBuffer buffer = new StringBuffer();
+            int i=0;
+            for(SuffixNode node : child){
+                if(node != null){
+                    buffer.append((char)i + " ");
+                }
+                i++;
+            }
+            return "SuffixNode [start=" + start + "]" + " " + buffer.toString();
+        }
     }
+
+    class End{
+        public End(int end){
+            this.end = end;
+        }
+        int end;
+    }
+
+    class Active{
+        Active(SuffixNode node){
+            activeLength = 0;
+            activeNode = node;
+            activeEdge = -1;
+        }
+
+        @Override
+        public String toString() {
+
+            return "Active [activeNode=" + activeNode + ", activeIndex="
+                    + activeEdge + ", activeLength=" + activeLength + "]";
+        }
+
+        SuffixNode activeNode;
+        int activeEdge;
+        int activeLength;
+    }
+
+    int traverseEdge(char []str, int idx, int start, int end)
+    {
+        int k = 0;
+        //Traverse the edge with character by character matching
+        for(k=start; k<=end && idx<str.length; k++, idx++)
+        {
+            if(text[k] != str[idx])
+                return -1;  // mo match
+        }
+        if(idx ==str.length)
+            return 1;  // match
+        return 0;  // more characters yet to match
+    }
+
+    int doTraversal(SuffixNode n, char[] str, int idx)
+    {
+        if(n == null)
+        {
+            return -1; // no match
+        }
+        int res = -1;
+        //If node n is not root node, then traverse edge
+        //from node n's parent to node n.
+        if(n.start != -1)
+        {
+            res = traverseEdge(str, idx, n.start, (n.end.end));
+            if(res != 0)
+                return res;  // match (res = 1) or no match (res = -1)
+        }
+        //Get the character index to search
+        idx = idx + edgeLength(n);
+        //If there is an edge from node n going out
+        //with current character str[idx], traverse that edge
+        if(n.child[str[idx]] != null)
+            return doTraversal(n.child[str[idx]], str, idx);
+        else
+            return -1;  // no match
+    }
+
+    int edgeLength(SuffixNode n) {
+        if(n == root)
+            return 0;
+        return ((n.end.end) - (n.start)) + 1;
+    }
+
+    void checkForSubString(char[] str)
+    {
+        int res = doTraversal(root, str, 0);
+        String ans=str.toString();
+        if(res == 1)
+            System.out.println("Pattern "+ans+" is a Substring");
+        else
+            System.out.println("Pattern "+ans+" is a NOT Substring");    }
+
+
 }
-
-class End{
-    public End(int end){
-        this.end = end;
-    }
-    int end;
-}
-
-class Active{
-    Active(SuffixNode node){
-        activeLength = 0;
-        activeNode = node;
-        activeEdge = -1;
-    }
-
-    @Override
-    public String toString() {
-
-        return "Active [activeNode=" + activeNode + ", activeIndex="
-                + activeEdge + ", activeLength=" + activeLength + "]";
-    }
-
-    SuffixNode activeNode;
-    int activeEdge;
-    int activeLength;
-}
-
